@@ -184,7 +184,6 @@ double VideoEngine::getDelayTime(double diff) {
 
 double VideoEngine::getFrameDiffTime(AVFrame *avFrame) {
     double pts = av_frame_get_best_effort_timestamp(avFrame);
-    LOGD("pts0 = %f", pts );
     if (pts == AV_NOPTS_VALUE) {
         pts = 0;
     }

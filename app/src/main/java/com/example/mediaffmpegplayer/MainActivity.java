@@ -57,10 +57,6 @@ public class MainActivity extends AppCompatActivity {
 
         File file = new File(Environment.getExternalStorageDirectory(), "input.mkv");
         paths.add(file.getAbsolutePath());
-        file = new File(Environment.getExternalStorageDirectory(), "input.avi");
-        paths.add(file.getAbsolutePath());
-        file = new File(Environment.getExternalStorageDirectory(), "input.rmvb");
-        paths.add(file.getAbsolutePath());
         paths.add("http://mn.maliuedu.com/music/input.mp4");
 
 
@@ -80,7 +76,6 @@ public class MainActivity extends AppCompatActivity {
                             seekBar.setProgress(currentTime * 100 / totalTime);
                             tvStartTime.setText(DisplayUtil.secdsToDateFormat(currentTime, 0));
                             tvEndTime.setText(DisplayUtil.secdsToDateFormat(totalTime, 0));
-
                         }
                     });
 
