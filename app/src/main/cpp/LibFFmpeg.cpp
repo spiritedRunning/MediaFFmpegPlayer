@@ -37,6 +37,7 @@ void LibFFmpeg::start() {
     }
     audio->play();
     video->play();
+    video->audio = audio;
 
     int count = 0;
     while (playStatus != NULL && !playStatus->exit) {
@@ -88,6 +89,7 @@ void LibFFmpeg::start() {
 }
 
 void LibFFmpeg::decodeFFmpegThread() {
+    pthread_mutex_lock(&init_mutex);
     av_register_all();
     avformat_network_init();
     pFormatCtx = avformat_alloc_context();
@@ -123,6 +125,13 @@ void LibFFmpeg::decodeFFmpegThread() {
                 video->steamIndex = i;
                 video->codecpar = pFormatCtx->streams[i]->codecpar;
 
+                video->time_base = pFormatCtx->streams[i]->time_base;
+                int num = pFormatCtx->streams[i]->avg_frame_rate.num;
+                int den = pFormatCtx->streams[i]->avg_frame_rate.den;
+                if (num != 0 && den != 0) {
+                    int fps = num / den;
+                    video->defaultDelayTime = 1.0 / fps;
+                }
             }
         }
     }
@@ -186,11 +195,14 @@ void LibFFmpeg::seek(int64_t sec) {
     }
     LOGE("seek start");
     if (sec >= 0 && sec <= duration) {
-        if (audio != NULL) {
+        if (audio != NULL && video != NULL) {
             playStatus->seek = true;
             audio->queue->clearAvPacket();
             audio->clock = 0;
             audio->last_tick = 0;
+
+            video->queue->clearAvPacket();
+            video->clock = 0;
 
             pthread_mutex_lock(&seek_mutex);
             int64_t rel = sec * AV_TIME_BASE;

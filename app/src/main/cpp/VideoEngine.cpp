@@ -68,7 +68,9 @@ void *playVideo(void *data) {
 
         if (avFrame->format == AV_PIX_FMT_YUV420P) {
             LOGE("当前视频是YUV420P格式");
-            av_usleep(33 * 1000);
+//            av_usleep(33 * 1000);
+            double diff = video->getFrameDiffTime(avFrame);
+            av_usleep(video->getDelayTime(diff) * 1000000);
 
             video->wlCallJava->onCallRenderYUV(
                     video->avCodecContext->width,
@@ -143,4 +145,55 @@ void *playVideo(void *data) {
 
 void VideoEngine::play() {
     pthread_create(&thread_play, NULL, playVideo, this);
+}
+
+double VideoEngine::getDelayTime(double diff) {
+    if (diff > 0.003) { // 音频超越视频3ms
+        delayTime = delayTime * 2 / 3;
+        if (delayTime < defaultDelayTime / 2) {
+            delayTime = defaultDelayTime * 2 / 3;
+        } else if (delayTime > defaultDelayTime * 2) {
+            delayTime = defaultDelayTime * 2;
+        }
+    } else if (diff < -0.003) { // 视频超越音频
+        delayTime = delayTime * 3 / 2;
+        if (delayTime < defaultDelayTime / 2) {
+            delayTime = defaultDelayTime * 2 / 3;
+        } else if (delayTime > defaultDelayTime * 2) {
+            delayTime = defaultDelayTime * 2;
+        }
+    }
+
+    if (diff >= 0.5) {
+        delayTime = 0;
+    } else if (diff <= -0.5) {
+        delayTime = defaultDelayTime * 2;
+    }
+
+    if (diff >= 10) { // 音频太快, 直接清空
+        queue->clearAvPacket();
+        delayTime = defaultDelayTime;
+    }
+
+    if (diff <= -10) { // 视频太快 音频赶不上
+        audio->queue->clearAvPacket();
+        delayTime = defaultDelayTime;
+    }
+    return delayTime; // 视频休眠时间
+}
+
+double VideoEngine::getFrameDiffTime(AVFrame *avFrame) {
+    double pts = av_frame_get_best_effort_timestamp(avFrame);
+    LOGD("pts0 = %f", pts );
+    if (pts == AV_NOPTS_VALUE) {
+        pts = 0;
+    }
+    LOGD("pts = %f", pts );
+    // pts = pts * time_base.num / time_base.den;
+    pts *= av_q2d(time_base);
+    LOGD("pts2 = %f", pts );
+    if (pts > 0) {
+        clock = pts;
+    }
+    return audio->clock - clock;
 }

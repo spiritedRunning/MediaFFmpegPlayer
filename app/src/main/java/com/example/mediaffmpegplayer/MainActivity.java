@@ -154,10 +154,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        File file = new File(Environment.getExternalStorageDirectory(), "v1080.mp4");
+        File file = new File(Environment.getExternalStorageDirectory(), "rage2.mp4");
         nPlayerInterface.setSource(file.getAbsolutePath());
-
 //        nPlayerInterface.setSource("http://mn.maliuedu.com/music/input.mp4");
+
         nPlayerInterface.prepared();
     }
 
